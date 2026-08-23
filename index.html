@@ -1,55 +1,121 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Prompt2Video</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prompt2Video - Free Video Maker</title>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f4f6fb;
-  padding: 20px;
+*{box-sizing:border-box}
+
+body{
+margin:0;
+font-family:Arial,sans-serif;
+background:#f3f5f9;
+color:#172033;
 }
 
-.container {
-  max-width: 600px;
-  margin: auto;
+.container{
+max-width:650px;
+margin:auto;
+padding:20px;
 }
 
-.card {
-  background: white;
-  padding: 20px;
-  border-radius: 15px;
+h1{
+font-size:34px;
+margin-bottom:8px;
 }
 
-textarea {
-  width: 100%;
-  height: 120px;
-  box-sizing: border-box;
-  padding: 12px;
-  font-size: 16px;
+.subtitle{
+color:#667085;
+margin-bottom:25px;
 }
 
-select, button {
-  width: 100%;
-  padding: 14px;
-  margin-top: 12px;
-  font-size: 16px;
+.card{
+background:white;
+padding:20px;
+border-radius:18px;
+box-shadow:0 6px 25px rgba(0,0,0,.08);
 }
 
-button {
-  background: black;
-  color: white;
-  border: none;
-  border-radius: 8px;
+textarea{
+width:100%;
+height:130px;
+padding:14px;
+border:1px solid #ccd2dc;
+border-radius:10px;
+font-size:16px;
+resize:none;
 }
 
-#result {
-  display: none;
-  margin-top: 20px;
-  padding: 15px;
-  background: #eee;
-  white-space: pre-wrap;
+select,button{
+width:100%;
+padding:14px;
+margin-top:12px;
+border-radius:10px;
+font-size:16px;
+}
+
+select{
+border:1px solid #ccd2dc;
+background:white;
+}
+
+button{
+border:0;
+background:#111827;
+color:white;
+font-weight:bold;
+}
+
+button:disabled{
+opacity:.5;
+}
+
+#status{
+margin-top:15px;
+font-weight:bold;
+}
+
+video{
+width:100%;
+margin-top:20px;
+border-radius:15px;
+background:black;
+display:none;
+}
+
+.download{
+display:none;
+background:#1677ff;
+margin-top:12px;
+text-align:center;
+text-decoration:none;
+color:white;
+padding:14px;
+border-radius:10px;
+font-weight:bold;
+}
+
+.progress{
+height:8px;
+background:#e5e7eb;
+border-radius:10px;
+margin-top:15px;
+overflow:hidden;
+display:none;
+}
+
+.progressBar{
+height:100%;
+width:0%;
+background:#111827;
+}
+
+.note{
+font-size:13px;
+color:#667085;
+margin-top:18px;
 }
 </style>
 </head>
@@ -60,14 +126,16 @@ button {
 
 <h1>🎬 Prompt2Video</h1>
 
-<p>Turn your idea into a video plan.</p>
+<div class="subtitle">
+Create a simple 15-second video from your idea.
+</div>
 
 <div class="card">
 
-<b>Enter your video idea</b>
+<b>Your video idea</b>
 
 <textarea id="prompt"
-placeholder="Create a 15-second Marathi advertisement for my shop"></textarea>
+placeholder="Example: Create a Marathi advertisement for a clothing shop."></textarea>
 
 <select id="language">
 <option>English</option>
@@ -76,14 +144,28 @@ placeholder="Create a 15-second Marathi advertisement for my shop"></textarea>
 </select>
 
 <select id="duration">
-<option>15 seconds</option>
-<option>30 seconds</option>
-<option>60 seconds</option>
+<option value="15">15 seconds</option>
 </select>
 
-<button onclick="generate()">GENERATE</button>
+<button id="generate" onclick="createVideo()">
+🎬 CREATE VIDEO
+</button>
 
-<div id="result"></div>
+<div class="progress" id="progress">
+<div class="progressBar" id="bar"></div>
+</div>
+
+<div id="status"></div>
+
+<video id="video" controls playsinline></video>
+
+<a id="download" class="download">
+⬇️ DOWNLOAD VIDEO
+</a>
+
+<div class="note">
+Free prototype. This version creates an animated video directly in your browser. AI-generated scenes will be added later.
+</div>
 
 </div>
 
@@ -91,32 +173,209 @@ placeholder="Create a 15-second Marathi advertisement for my shop"></textarea>
 
 <script>
 
-function generate() {
+function createVideo(){
 
-var prompt = document.getElementById("prompt").value;
-var language = document.getElementById("language").value;
-var duration = document.getElementById("duration").value;
+const prompt=document.getElementById("prompt").value.trim();
 
-if (prompt == "") {
+if(!prompt){
 alert("Please enter your video idea.");
 return;
 }
 
-var result =
-"🎬 VIDEO PLAN\n\n" +
-"Your idea:\n" + prompt + "\n\n" +
-"Language: " + language + "\n" +
-"Duration: " + duration + "\n\n" +
-"🎥 SCENE 1\nOpening scene based on your idea.\n\n" +
-"🎥 SCENE 2\nMain action or product scene.\n\n" +
-"🎥 SCENE 3\nClosing scene and call to action.\n\n" +
-"🎙 VOICE-OVER\nVoice-over in " + language + ".\n\n" +
-"🎵 MUSIC\nBackground music matching the mood.\n\n" +
-"📝 CAPTIONS\nCaptions for social media.\n\n" +
-"📱 FORMAT\nVertical 9:16";
+const button=document.getElementById("generate");
+const status=document.getElementById("status");
+const progress=document.getElementById("progress");
+const bar=document.getElementById("bar");
+const video=document.getElementById("video");
+const download=document.getElementById("download");
 
-document.getElementById("result").innerText = result;
-document.getElementById("result").style.display = "block";
+button.disabled=true;
+video.style.display="none";
+download.style.display="none";
+progress.style.display="block";
+bar.style.width="0%";
+
+status.innerText="Creating your 15-second video...";
+
+const canvas=document.createElement("canvas");
+
+canvas.width=720;
+canvas.height=1280;
+
+const ctx=canvas.getContext("2d");
+
+const stream=canvas.captureStream(30);
+
+let mime="video/webm";
+
+if(MediaRecorder.isTypeSupported("video/mp4")){
+mime="video/mp4";
+}
+
+const recorder=new MediaRecorder(stream,{
+mimeType:mime,
+videoBitsPerSecond:2500000
+});
+
+let chunks=[];
+
+recorder.ondataavailable=function(e){
+
+if(e.data.size>0){
+chunks.push(e.data);
+}
+
+};
+
+recorder.onstop=function(){
+
+const blob=new Blob(chunks,{type:mime});
+
+const url=URL.createObjectURL(blob);
+
+video.src=url;
+video.style.display="block";
+
+download.href=url;
+download.download="prompt2video-15sec."+(mime.includes("mp4")?"mp4":"webm");
+download.style.display="block";
+
+status.innerText="✅ Video created successfully!";
+
+button.disabled=false;
+
+};
+
+recorder.start();
+
+const start=performance.now();
+
+function draw(time){
+
+const elapsed=(time-start)/1000;
+
+const progressValue=Math.min(elapsed/15,1);
+
+bar.style.width=(progressValue*100)+"%";
+
+let scene;
+
+if(elapsed<5){
+scene=1;
+}
+else if(elapsed<10){
+scene=2;
+}
+else{
+scene=3;
+}
+
+ctx.fillStyle="#111827";
+ctx.fillRect(0,0,720,1280);
+
+ctx.fillStyle="#ffffff";
+ctx.textAlign="center";
+
+ctx.font="bold 58px Arial";
+
+ctx.fillText("PROMPT2VIDEO",360,170);
+
+ctx.font="bold 42px Arial";
+
+if(scene===1){
+
+ctx.fillText("SCENE 1",360,390);
+
+ctx.font="34px Arial";
+
+wrapText(ctx,"Your video idea",360,520,600,50);
+
+}
+
+if(scene===2){
+
+ctx.fillText("SCENE 2",360,390);
+
+ctx.font="34px Arial";
+
+wrapText(ctx,prompt,360,520,600,50);
+
+}
+
+if(scene===3){
+
+ctx.fillText("SCENE 3",360,390);
+
+ctx.font="bold 42px Arial";
+
+ctx.fillText("YOUR STORY",360,520);
+
+ctx.font="32px Arial";
+
+ctx.fillText("Your video is ready!",360,610);
+
+}
+
+ctx.font="26px Arial";
+
+ctx.fillText("15 SECOND VIDEO",360,1150);
+
+ctx.font="22px Arial";
+
+ctx.fillText("9:16 • Social Media",360,1200);
+
+if(progressValue<1){
+
+requestAnimationFrame(draw);
+
+}
+else{
+
+recorder.stop();
+
+}
+
+}
+
+requestAnimationFrame(draw);
+
+}
+
+function wrapText(ctx,text,x,y,maxWidth,lineHeight){
+
+const words=text.split(" ");
+
+let line="";
+
+let lines=[];
+
+for(let n=0;n<words.length;n++){
+
+let testLine=line+words[n]+" ";
+
+let metrics=ctx.measureText(testLine);
+
+if(metrics.width>maxWidth && n>0){
+
+lines.push(line);
+
+line=words[n]+" ";
+
+}else{
+
+line=testLine;
+
+}
+
+}
+
+lines.push(line);
+
+for(let i=0;i<lines.length;i++){
+
+ctx.fillText(lines[i],x,y+(i*lineHeight));
+
+}
 
 }
 
