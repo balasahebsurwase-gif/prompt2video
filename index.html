@@ -3,11 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Prompt2Video 3B</title>
+<title>Prompt2Video</title>
 
 <style>
-*{box-sizing:border-box}
-
 body{
 margin:0;
 font-family:Arial,sans-serif;
@@ -23,12 +21,10 @@ padding:20px;
 
 h1{
 font-size:34px;
-margin-bottom:5px;
 }
 
-.subtitle{
+p{
 color:#aeb5c2;
-margin-bottom:25px;
 }
 
 .card{
@@ -41,12 +37,12 @@ textarea{
 width:100%;
 height:130px;
 padding:14px;
-border:1px solid #3a414d;
+box-sizing:border-box;
 border-radius:10px;
+border:1px solid #444;
 background:#11151c;
 color:white;
 font-size:16px;
-resize:none;
 }
 
 select,button{
@@ -60,13 +56,13 @@ font-size:16px;
 select{
 background:#11151c;
 color:white;
-border:1px solid #3a414d;
+border:1px solid #444;
 }
 
 button{
 border:0;
-background:#ffffff;
-color:#111827;
+background:white;
+color:#111;
 font-weight:bold;
 }
 
@@ -76,48 +72,42 @@ opacity:.5;
 
 #status{
 margin-top:15px;
-color:#cbd2dc;
+font-weight:bold;
 }
 
 #progress{
-height:7px;
-background:#303641;
+display:none;
+height:8px;
+background:#333;
 border-radius:10px;
 margin-top:15px;
-overflow:hidden;
-display:none;
 }
 
 #bar{
 height:100%;
 width:0%;
-background:#ffffff;
+background:white;
+border-radius:10px;
 }
 
 video{
+display:none;
 width:100%;
 margin-top:20px;
 border-radius:15px;
 background:black;
-display:none;
 }
 
-.download{
+#download{
 display:none;
-background:#ffffff;
-color:#111827;
+margin-top:12px;
+padding:14px;
+background:white;
+color:#111;
 text-align:center;
 text-decoration:none;
-padding:14px;
 border-radius:10px;
-margin-top:12px;
 font-weight:bold;
-}
-
-.note{
-font-size:12px;
-color:#858e9c;
-margin-top:18px;
 }
 </style>
 </head>
@@ -128,16 +118,16 @@ margin-top:18px;
 
 <h1>🎬 Prompt2Video</h1>
 
-<div class="subtitle">
-Create a cinematic 15-second story from one idea.
-</div>
+<p>
+Create a cinematic 15-second video from your idea.
+</p>
 
 <div class="card">
 
-<b>Describe your video</b>
+<b>Your video idea</b>
 
 <textarea id="prompt"
-placeholder="Example: Create a cinematic Marathi advertisement for Suvarna Boutique."></textarea>
+placeholder="Example: Create a Marathi clothing shop advertisement"></textarea>
 
 <select id="language">
 <option>Marathi</option>
@@ -145,8 +135,8 @@ placeholder="Example: Create a cinematic Marathi advertisement for Suvarna Bouti
 <option>Hindi</option>
 </select>
 
-<button id="generate" onclick="createVideo()">
-🎬 CREATE CINEMATIC VIDEO
+<button id="createButton" onclick="makeVideo()">
+🎬 CREATE VIDEO
 </button>
 
 <div id="progress">
@@ -157,20 +147,14 @@ placeholder="Example: Create a cinematic Marathi advertisement for Suvarna Bouti
 
 <video id="video" controls playsinline></video>
 
-<a id="download" class="download">
-⬇️ DOWNLOAD VIDEO
-</a>
-
-<div class="note">
-Stage 3B prototype — cinematic scenes, characters, locations, camera movement and audio.
-</div>
+<a id="download">⬇️ DOWNLOAD VIDEO</a>
 
 </div>
 </div>
 
 <script>
 
-function createVideo(){
+function makeVideo(){
 
 const prompt=document.getElementById("prompt").value.trim();
 
@@ -179,294 +163,380 @@ alert("Please enter your video idea.");
 return;
 }
 
-const generate=document.getElementById("generate");
+const button=document.getElementById("createButton");
 const status=document.getElementById("status");
 const progress=document.getElementById("progress");
 const bar=document.getElementById("bar");
 const video=document.getElementById("video");
 const download=document.getElementById("download");
 
-generate.disabled=true;
+button.disabled=true;
+progress.style.display="block";
 video.style.display="none";
 download.style.display="none";
-progress.style.display="block";
 
-status.innerText="Building cinematic scenes...";
+status.innerText="Preparing video...";
 
 const canvas=document.createElement("canvas");
 
-canvas.width=720;
-canvas.height=1280;
+canvas.width=540;
+canvas.height=960;
 
 const ctx=canvas.getContext("2d");
 
-const stream=canvas.captureStream(30);
+let stream;
 
-let mime="video/webm";
+try{
 
-if(MediaRecorder.isTypeSupported("video/mp4")){
-mime="video/mp4";
+stream=canvas.captureStream(24);
+
+}catch(error){
+
+status.innerText="Your browser does not support video recording.";
+button.disabled=false;
+return;
+
 }
 
-const recorder=new MediaRecorder(stream,{
-mimeType:mime,
-videoBitsPerSecond:3000000
+let mimeType="video/webm";
+
+if(MediaRecorder.isTypeSupported("video/webm;codecs=vp8")){
+mimeType="video/webm;codecs=vp8";
+}
+
+let recorder;
+
+try{
+
+recorder=new MediaRecorder(stream,{
+mimeType:mimeType
 });
+
+}catch(error){
+
+status.innerText="Video recording is not supported on this browser.";
+
+button.disabled=false;
+
+return;
+
+}
 
 let chunks=[];
 
-recorder.ondataavailable=e=>{
-if(e.data.size>0)chunks.push(e.data);
+recorder.ondataavailable=function(event){
+
+if(event.data && event.data.size>0){
+
+chunks.push(event.data);
+
+}
+
 };
 
-recorder.onstop=()=>{
+recorder.onerror=function(){
 
-const blob=new Blob(chunks,{type:mime});
+status.innerText="Recording error. Please try again.";
+
+button.disabled=false;
+
+};
+
+recorder.onstop=function(){
+
+try{
+
+const blob=new Blob(chunks,{
+type:mimeType
+});
+
+if(blob.size===0){
+
+status.innerText="Video was empty. Please try again.";
+
+button.disabled=false;
+
+return;
+
+}
 
 const url=URL.createObjectURL(blob);
 
 video.src=url;
+
 video.style.display="block";
 
 download.href=url;
-download.download="Prompt2Video-Cinematic."+(mime.includes("mp4")?"mp4":"webm");
+
+download.download="Prompt2Video-15sec.webm";
 
 download.style.display="block";
 
-status.innerText="✅ Your cinematic video is ready!";
+status.innerText="✅ Video created successfully!";
 
-generate.disabled=false;
+button.disabled=false;
+
+}catch(error){
+
+status.innerText="Could not prepare the video.";
+
+button.disabled=false;
+
+}
 
 };
 
-recorder.start();
+const startTime=Date.now();
 
-const start=performance.now();
+let stopped=false;
 
-function animate(time){
+function finish(){
 
-const elapsed=(time-start)/1000;
+if(stopped)return;
+
+stopped=true;
+
+try{
+
+recorder.stop();
+
+}catch(e){}
+
+}
+
+recorder.start(250);
+
+status.innerText="🎬 Recording your video...";
+
+function draw(){
+
+const elapsed=(Date.now()-startTime)/1000;
 
 const percent=Math.min(elapsed/15,1);
 
 bar.style.width=(percent*100)+"%";
 
-const scene=Math.min(Math.floor(elapsed/3),4);
+drawScene(ctx,canvas,sceneNumber(elapsed),prompt);
 
-drawScene(scene,elapsed,prompt);
+if(elapsed>=15){
 
-if(percent<1){
+finish();
 
-requestAnimationFrame(animate);
-
-}else{
-
-recorder.stop();
+return;
 
 }
 
-}
-
-requestAnimationFrame(animate);
+requestAnimationFrame(draw);
 
 }
 
-function drawScene(scene,time,prompt){
+/* safety timeout */
 
-ctx.clearRect(0,0,720,1280);
+setTimeout(function(){
+
+finish();
+
+},18000);
+
+requestAnimationFrame(draw);
+
+}
+
+function sceneNumber(seconds){
+
+if(seconds<3)return 0;
+
+if(seconds<6)return 1;
+
+if(seconds<9)return 2;
+
+if(seconds<12)return 3;
+
+return 4;
+
+}
+
+function drawScene(ctx,canvas,scene,prompt){
+
+const w=canvas.width;
+const h=canvas.height;
+
+ctx.clearRect(0,0,w,h);
 
 /* background */
 
-const backgrounds=[
-
-["#172554","#0f172a"],
-["#3f1d38","#111827"],
-["#064e3b","#111827"],
-["#78350f","#111827"],
-["#312e81","#020617"]
-
+const colors=[
+["#182848","#4b6cb7"],
+["#42275a","#734b6d"],
+["#134e5e","#71b280"],
+["#7b4397","#dc2430"],
+["#141e30","#243b55"]
 ];
 
-const colors=backgrounds[scene];
+const gradient=ctx.createLinearGradient(0,0,w,h);
 
-const gradient=ctx.createLinearGradient(0,0,720,1280);
-
-gradient.addColorStop(0,colors[0]);
-
-gradient.addColorStop(1,colors[1]);
+gradient.addColorStop(0,colors[scene][0]);
+gradient.addColorStop(1,colors[scene][1]);
 
 ctx.fillStyle=gradient;
 
-ctx.fillRect(0,0,720,1280);
+ctx.fillRect(0,0,w,h);
 
 /* cinematic glow */
 
-const glow=ctx.createRadialGradient(
-360,520,20,
-360,520,500
-);
+ctx.fillStyle="rgba(255,255,255,.08)";
 
-glow.addColorStop(0,"rgba(255,255,255,.18)");
+ctx.beginPath();
 
-glow.addColorStop(1,"rgba(255,255,255,0)");
+ctx.arc(w/2,430,250,0,Math.PI*2);
 
-ctx.fillStyle=glow;
-
-ctx.fillRect(0,0,720,1280);
+ctx.fill();
 
 /* location */
 
-ctx.fillStyle="rgba(255,255,255,.10)";
-
-ctx.fillRect(40,260,640,430);
-
-/* simple location windows */
-
-ctx.fillStyle="rgba(255,255,255,.16)";
-
-ctx.fillRect(90,330,150,190);
-
-ctx.fillRect(285,330,150,190);
-
-ctx.fillRect(480,330,150,190);
+drawLocation(ctx,scene,w,h);
 
 /* person */
 
-let personX=360;
+drawPerson(ctx,w/2,600);
 
-if(scene===1){
-
-personX=250+Math.sin(time*2)*30;
-
-}
-
-if(scene===2){
-
-personX=360+Math.sin(time*2)*70;
-
-}
-
-if(scene===3){
-
-personX=430+Math.sin(time*2)*25;
-
-}
-
-if(scene===4){
-
-personX=360;
-
-}
-
-drawPerson(personX,700,scene);
-
-/* scene title */
+/* title */
 
 ctx.textAlign="center";
 
 ctx.fillStyle="white";
 
-ctx.font="bold 38px Arial";
+ctx.font="bold 34px Arial";
 
 const titles=[
-
 "DISCOVER",
-
-"THE EXPERIENCE",
-
-"THE COLLECTION",
-
-"THE MOMENT",
-
-"YOUR STORY"
-
+"ENTER",
+"EXPLORE",
+"ENJOY",
+"YOUR MOMENT"
 ];
 
-ctx.fillText(titles[scene],360,150);
+ctx.fillText(titles[scene],w/2,150);
 
-/* scene descriptions */
-
-ctx.font="24px Arial";
-
-const descriptions=[
-
-"Beautiful location • cinematic opening",
-
-"Customer enters • camera follows",
-
-"Products • close-up • detail",
-
-"Happy moment • emotional reaction",
-
-"Brand • message • call to action"
-
-];
-
-ctx.fillText(descriptions[scene],360,1060);
-
-/* prompt snippet */
+/* prompt */
 
 ctx.font="20px Arial";
 
-ctx.fillStyle="rgba(255,255,255,.75)";
+let text=prompt;
 
-let shortPrompt=prompt;
+if(text.length>42){
 
-if(shortPrompt.length>45){
-
-shortPrompt=shortPrompt.substring(0,45)+"...";
+text=text.substring(0,42)+"...";
 
 }
 
-ctx.fillText(shortPrompt,360,1130);
+ctx.fillText(text,w/2,820);
+
+/* footer */
 
 ctx.font="18px Arial";
 
-ctx.fillText("PROMPT2VIDEO • 9:16",360,1200);
+ctx.fillText("PROMPT2VIDEO • 9:16",w/2,h-45);
 
 }
 
-function drawPerson(x,y,scene){
+function drawLocation(ctx,scene,w,h){
 
-/* body */
+/* floor */
 
-ctx.fillStyle="rgba(255,255,255,.90)";
+ctx.fillStyle="rgba(0,0,0,.25)";
+
+ctx.fillRect(0,690,w,270);
+
+/* windows/buildings */
+
+ctx.fillStyle="rgba(255,255,255,.13)";
+
+for(let x=35;x<w;x+=125){
+
+ctx.fillRect(x,270,85,220);
+
+}
+
+/* shop counter */
+
+ctx.fillStyle="rgba(255,255,255,.15)";
+
+ctx.fillRect(60,520,w-120,100);
+
+/* scene-specific sign */
+
+ctx.fillStyle="rgba(255,255,255,.8)";
+
+ctx.font="bold 22px Arial";
+
+ctx.textAlign="center";
+
+const signs=[
+"FASHION BOUTIQUE",
+"WELCOME",
+"NEW COLLECTION",
+"SHOP TODAY",
+"THANK YOU"
+];
+
+ctx.fillText(signs[scene],w/2,570);
+
+}
+
+function drawPerson(ctx,x,y){
+
+/* head */
+
+ctx.fillStyle="rgba(255,230,210,.95)";
 
 ctx.beginPath();
 
-ctx.arc(x,y-150,55,0,Math.PI*2);
+ctx.arc(x,y-150,48,0,Math.PI*2);
+
+ctx.fill();
+
+/* hair */
+
+ctx.fillStyle="#171717";
+
+ctx.beginPath();
+
+ctx.arc(x,y-175,50,Math.PI,Math.PI*2);
 
 ctx.fill();
 
 /* body */
 
+ctx.fillStyle="rgba(255,255,255,.9)";
+
 ctx.beginPath();
 
-ctx.roundRect(x-75,y-90,150,230,40);
+ctx.roundRect(x-65,y-100,130,210,30);
 
 ctx.fill();
 
 /* arms */
 
-ctx.strokeStyle="rgba(255,255,255,.90)";
+ctx.strokeStyle="rgba(255,255,255,.9)";
 
-ctx.lineWidth=28;
+ctx.lineWidth=24;
 
 ctx.lineCap="round";
 
 ctx.beginPath();
 
-ctx.moveTo(x-55,y-35);
+ctx.moveTo(x-50,y-55);
 
-ctx.lineTo(x-125,y+65);
+ctx.lineTo(x-110,y+45);
 
 ctx.stroke();
 
 ctx.beginPath();
 
-ctx.moveTo(x+55,y-35);
+ctx.moveTo(x+50,y-55);
 
-ctx.lineTo(x+125,y+65);
+ctx.lineTo(x+110,y+45);
 
 ctx.stroke();
 
@@ -474,17 +544,17 @@ ctx.stroke();
 
 ctx.beginPath();
 
-ctx.moveTo(x-35,y+130);
+ctx.moveTo(x-30,y+105);
 
-ctx.lineTo(x-55,y+260);
+ctx.lineTo(x-45,y+220);
 
 ctx.stroke();
 
 ctx.beginPath();
 
-ctx.moveTo(x+35,y+130);
+ctx.moveTo(x+30,y+105);
 
-ctx.lineTo(x+55,y+260);
+ctx.lineTo(x+45,y+220);
 
 ctx.stroke();
 
@@ -494,5 +564,3 @@ ctx.stroke();
 
 </body>
 </html>
-
-if(
