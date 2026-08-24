@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Prompt2Video Visual Director</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial,sans-serif;
+background:#0b1020;
+color:white;
+}
+
+.container{
+max-width:900px;
+margin:auto;
+padding:25px 18px 50px;
+}
+
+h1{
+text-align:center;
+}
+
+.subtitle{
+text-align:center;
+color:#aab4c8;
+margin-bottom:25px;
+}
+
+.card{
+background:#151c30;
+border:1px solid #2b3653;
+border-radius:18px;
+padding:20px;
+margin-bottom:20px;
+}
+
+textarea{
+width:100%;
+height:130px;
+padding:14px;
+box-sizing:border-box;
+border-radius:10px;
+border:1px solid #3c4864;
+background:#0d1324;
+color:white;
+font-size:16px;
+}
+
+button{
+width:100%;
+padding:15px;
+margin-top:12px;
+border:0;
+border-radius:10px;
+font-weight:bold;
+font-size:16px;
+cursor:pointer;
+}
+
+.primary{
+background:white;
+color:#111827;
+}
+
+.scene{
+background:#0e1527;
+border:1px solid #2b3653;
+border-radius:15px;
+padding:18px;
+margin-top:18px;
+}
+
+.scene h2{
+margin-top:0;
+}
+
+.prompt{
+background:#080d19;
+padding:15px;
+border-radius:10px;
+line-height:1.6;
+color:#d9e1f2;
+}
+
+.generate{
+background:#263653;
+color:white;
+}
+
+.imageArea{
+margin-top:15px;
+border-radius:12px;
+overflow:hidden;
+background:#05070c;
+min-height:180px;
+display:flex;
+align-items:center;
+justify-content:center;
+color:#7f8ba3;
+text-align:center;
+}
+
+.imageArea img{
+width:100%;
+display:block;
+}
+
+.status{
+margin-top:12px;
+color:#b8c2d5;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🖼️ Prompt2Video Visual Director</h1>
+
+<div class="subtitle">
+Turn each video scene into a precise image-generation prompt.
+</div>
+
+<div class="card">
+
+<h3>🎬 Your Video Idea</h3>
+
+<textarea id="idea"
+placeholder="Example: Create a cinematic Marathi advertisement for Suvarna Boutique."></textarea>
+
+<button class="primary" onclick="createScenes()">
+🧠 CREATE 5 VISUAL SCENES
+</button>
+
+</div>
+
+<div id="scenes"></div>
+
+</div>
+
+<script>
+
+function createScenes(){
+
+const idea=document.getElementById("idea").value.trim();
+
+if(!idea){
+
+alert("Please enter your video idea.");
+
+return;
+
+}
+
+const sceneData=[
+
+{
+title:"Scene 1 — Establishing Shot",
+visual:
+"Wide cinematic establishing shot showing the main location related to the story. Include a realistic environment, natural lighting, realistic people if required, detailed architecture and an attractive composition."
+},
+
+{
+title:"Scene 2 — Character Introduction",
+visual:
+"Medium cinematic shot introducing the main character. Show the appropriate man, woman, child or group based on the story. Natural expression, realistic clothing and believable surroundings."
+},
+
+{
+title:"Scene 3 — Main Action",
+visual:
+"Cinematic scene showing the main action described by the story. Clearly show the product, person or event. Use realistic details, natural body language and professional lighting."
+},
+
+{
+title:"Scene 4 — Emotional / Important Moment",
+visual:
+"Close or medium cinematic shot showing the most important emotional or interesting moment of the story. Natural facial expression, realistic environment and strong visual storytelling."
+},
+
+{
+title:"Scene 5 — Final Hero Shot",
+visual:
+"Beautiful cinematic final shot representing the main message. Show the product, person, location or brand clearly. Strong composition suitable for an advertisement or social-media ending."
+}
+
+];
+
+const container=document.getElementById("scenes");
+
+container.innerHTML="";
+
+sceneData.forEach(function(scene,index){
+
+const prompt=
+scene.visual+
+" The original user idea is: "+
+idea+
+" Vertical 9:16 composition. Photorealistic, highly detailed, cinematic photography, natural skin texture, realistic lighting, sharp subject, professional camera quality.";
+
+const div=document.createElement("div");
+
+div.className="scene";
+
+div.innerHTML=`
+
+<h2>🎬 ${scene.title}</h2>
+
+<div class="prompt">
+
+<b>🖼️ Image Generation Prompt</b>
+
+<br><br>
+
+${prompt}
+
+</div>
+
+<button
+class="generate"
+onclick="copyPrompt(${index})">
+
+📋 COPY IMAGE PROMPT
+
+</button>
+
+<div class="imageArea">
+
+Image will appear here after we connect the image-generation service.
+
+</div>
+
+<div class="status">
+
+Scene ${index+1} ready for image generation.
+
+</div>
+
+`;
+
+container.appendChild(div);
+
+});
+
+}
+
+function copyPrompt(index){
+
+const prompts=document.querySelectorAll(".prompt");
+
+const text=prompts[index].innerText
+.replace("🖼️ Image Generation Prompt","")
+.trim();
+
+navigator.clipboard.writeText(text);
+
+alert("Image prompt copied.");
+
+}
+
+</script>
+
+</body>
+
+</html>
