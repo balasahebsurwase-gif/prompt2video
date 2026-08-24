@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prompt2Video - Scene Video Test</title>
+
+<style>
+*{
+box-sizing:border-box;
+}
+
+body{
+margin:0;
+font-family:Arial,sans-serif;
+background:#0b1020;
+color:white;
+}
+
+.container{
+max-width:700px;
+margin:auto;
+padding:25px 18px 50px;
+}
+
+h1{
+text-align:center;
+font-size:30px;
+}
+
+.subtitle{
+text-align:center;
+color:#aeb7ca;
+margin-bottom:25px;
+}
+
+.card{
+background:#151c30;
+border:1px solid #2b3653;
+border-radius:18px;
+padding:20px;
+}
+
+input{
+width:100%;
+padding:14px;
+margin-top:10px;
+border-radius:10px;
+background:#0d1324;
+color:white;
+border:1px solid #3b465f;
+}
+
+button{
+width:100%;
+padding:15px;
+margin-top:14px;
+border:0;
+border-radius:10px;
+background:white;
+color:#111827;
+font-weight:bold;
+font-size:16px;
+cursor:pointer;
+}
+
+button:disabled{
+opacity:.5;
+}
+
+canvas{
+width:100%;
+display:block;
+margin-top:20px;
+border-radius:15px;
+background:#000;
+}
+
+video{
+width:100%;
+display:none;
+margin-top:20px;
+border-radius:15px;
+background:#000;
+}
+
+#status{
+margin-top:15px;
+color:#cbd5e1;
+line-height:1.5;
+}
+
+.download{
+display:none;
+margin-top:12px;
+padding:15px;
+background:white;
+color:#111827;
+border-radius:10px;
+text-decoration:none;
+text-align:center;
+font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🎬 Scene → Video</h1>
+
+<div class="subtitle">
+Turn one AI-generated scene image into a cinematic video.
+</div>
+
+<div class="card">
+
+<label>
+🖼️ Select your AI-generated Scene 1 image
+</label>
+
+<input
+type="file"
+id="imageInput"
+accept="image/png,image/jpeg,image/webp"
+>
+
+<button id="createButton" onclick="createVideo()">
+🎬 CREATE 15-SECOND VIDEO
+</button>
+
+<div id="status">
+Waiting for your scene image.
+</div>
+
+<canvas
+id="canvas"
+width="540"
+height="960"
+></canvas>
+
+<video
+id="video"
+controls
+playsinline
+></video>
+
+<a
+id="download"
+class="download"
+>
+⬇️ DOWNLOAD VIDEO
+</a>
+
+</div>
+
+</div>
+
+<script>
+
+let selectedImage=null;
+
+document.getElementById("imageInput").addEventListener(
+"change",
+function(event){
+
+const file=event.target.files[0];
+
+if(!file){
+
+selectedImage=null;
+
+document.getElementById("status").innerText=
+"Waiting for your scene image.";
+
+return;
+
+}
+
+const reader=new FileReader();
+
+reader.onload=function(e){
+
+selectedImage=new Image();
+
+selectedImage.onload=function(){
+
+drawPreview();
+
+document.getElementById("status").innerText=
+"✅ Scene image loaded. Ready to create video.";
+
+};
+
+selectedImage.src=e.target.result;
+
+};
+
+reader.readAsDataURL(file);
+
+});
+
+
+function drawPreview(){
+
+const canvas=document.getElementById("canvas");
+
+const ctx=canvas.getContext("2d");
+
+if(!selectedImage)return;
+
+drawImageCover(
+ctx,
+selectedImage,
+canvas.width,
+canvas.height,
+1
+);
+
+}
+
+
+function drawImageCover(
+ctx,
+img,
+canvasWidth,
+canvasHeight,
+zoom
+){
+
+const imageRatio=img.width/img.height;
+
+const canvasRatio=canvasWidth/canvasHeight;
+
+let drawWidth;
+let drawHeight;
+
+if(imageRatio>canvasRatio){
+
+drawHeight=canvasHeight*zoom;
+
+drawWidth=drawHeight*imageRatio;
+
+}else{
+
+drawWidth=canvasWidth*zoom;
+
+drawHeight=drawWidth/imageRatio;
+
+}
+
+const x=(canvasWidth-drawWidth)/2;
+
+const y=(canvasHeight-drawHeight)/2;
+
+ctx.drawImage(
+img,
+x,
+y,
+drawWidth,
+drawHeight
+);
+
+}
+
+
+function createVideo(){
+
+if(!selectedImage){
+
+alert("Please select your Scene 1 image first.");
+
+return;
+
+}
+
+const button=document.getElementById("createButton");
+
+const status=document.getElementById("status");
+
+const canvas=document.getElementById("canvas");
+
+const video=document.getElementById("video");
+
+const download=document.getElementById("download");
+
+button.disabled=true;
+
+video.style.display="none";
+
+download.style.display="none";
+
+status.innerText=
+"🎬 Preparing cinematic video...";
+
+const ctx=canvas.getContext("2d");
+
+let stream;
+
+try{
+
+stream=canvas.captureStream(30);
+
+}catch(error){
+
+status.innerText=
+"❌ Your browser does not support video recording.";
+
+button.disabled=false;
+
+return;
+
+}
+
+let mimeType="video/webm";
+
+if(
+MediaRecorder.isTypeSupported(
+"video/webm;codecs=vp9"
+)
+){
+
+mimeType="video/webm;codecs=vp9";
+
+}else if(
+MediaRecorder.isTypeSupported(
+"video/webm;codecs=vp8"
+)
+){
+
+mimeType="video/webm;codecs=vp8";
+
+}
+
+let recorder;
+
+try{
+
+recorder=new MediaRecorder(
+stream,
+{
+mimeType:mimeType
+}
+);
+
+}catch(error){
+
+status.innerText=
+"❌ Video recording is not supported.";
+
+button.disabled=false;
+
+return;
+
+}
+
+let chunks=[];
+
+recorder.ondataavailable=function(event){
+
+if(event.data && event.data.size>0){
+
+chunks.push(event.data);
+
+}
+
+};
+
+recorder.onerror=function(){
+
+status.innerText=
+"❌ Recording error.";
+
+button.disabled=false;
+
+};
+
+recorder.onstop=function(){
+
+const blob=new Blob(
+chunks,
+{
+type:mimeType
+}
+);
+
+if(blob.size===0){
+
+status.innerText=
+"❌ Empty video created.";
+
+button.disabled=false;
+
+return;
+
+}
+
+const url=URL.createObjectURL(blob);
+
+video.src=url;
+
+video.style.display="block";
+
+download.href=url;
+
+download.download=
+"Prompt2Video-Scene1.webm";
+
+download.style.display="block";
+
+status.innerText=
+"✅ 15-second cinematic video created!";
+
+button.disabled=false;
+
+};
+
+const startTime=performance.now();
+
+const duration=15000;
+
+function animate(now){
+
+const elapsed=now-startTime;
+
+const progress=Math.min(
+elapsed/duration,
+1
+);
+
+/*
+Slow cinematic zoom:
+starts at 1.00
+ends at 1.10
+*/
+
+const zoom=
+1+
+(progress*0.10);
+
+ctx.clearRect(
+0,
+0,
+canvas.width,
+canvas.height
+);
+
+/* cinematic dark overlay */
+
+drawImageCover(
+ctx,
+selectedImage,
+canvas.width,
+canvas.height,
+zoom
+);
+
+/* subtle cinematic overlay */
+
+ctx.fillStyle="rgba(0,0,0,0.08)";
+
+ctx.fillRect(
+0,
+0,
+canvas.width,
+canvas.height
+);
+
+if(elapsed>=duration){
+
+recorder.stop();
+
+return;
+
+}
+
+requestAnimationFrame(animate);
+
+}
+
+recorder.start(250);
+
+status.innerText=
+"🎥 Recording cinematic movement...";
+
+requestAnimationFrame(animate);
+
+/*
+Safety timeout.
+Prevents endless loading.
+*/
+
+setTimeout(function(){
+
+if(recorder.state==="recording"){
+
+recorder.stop();
+
+}
+
+},17000);
+
+}
+
+</script>
+
+</body>
+</html>
