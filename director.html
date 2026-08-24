@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prompt2Video AI Director</title>
+
+<style>
+*{
+box-sizing:border-box;
+}
+
+body{
+margin:0;
+font-family:Arial,sans-serif;
+background:#0b1020;
+color:#fff;
+}
+
+.container{
+max-width:900px;
+margin:auto;
+padding:25px 18px 50px;
+}
+
+.header{
+text-align:center;
+margin-bottom:25px;
+}
+
+.header h1{
+font-size:36px;
+margin:0 0 8px;
+}
+
+.header p{
+color:#aeb7ca;
+margin:0;
+}
+
+.card{
+background:#151c30;
+border:1px solid #28324d;
+border-radius:18px;
+padding:20px;
+margin-bottom:20px;
+}
+
+label{
+display:block;
+font-weight:bold;
+margin-bottom:8px;
+}
+
+textarea{
+width:100%;
+height:140px;
+padding:15px;
+border-radius:12px;
+border:1px solid #3b465f;
+background:#0d1324;
+color:white;
+font-size:16px;
+resize:vertical;
+}
+
+select{
+width:100%;
+padding:13px;
+margin-top:12px;
+border-radius:10px;
+background:#0d1324;
+color:white;
+border:1px solid #3b465f;
+font-size:16px;
+}
+
+button{
+width:100%;
+padding:15px;
+margin-top:14px;
+border:0;
+border-radius:11px;
+background:#fff;
+color:#101828;
+font-size:16px;
+font-weight:bold;
+cursor:pointer;
+}
+
+button:disabled{
+opacity:.5;
+cursor:not-allowed;
+}
+
+#status{
+margin-top:15px;
+color:#c9d2e3;
+}
+
+.director{
+display:none;
+}
+
+.scene{
+background:#0e1527;
+border:1px solid #293653;
+border-radius:15px;
+padding:18px;
+margin-top:15px;
+}
+
+.scene-title{
+font-size:21px;
+font-weight:bold;
+margin-bottom:12px;
+}
+
+.row{
+margin:8px 0;
+line-height:1.5;
+}
+
+.key{
+color:#9fb4d9;
+font-weight:bold;
+}
+
+.badge{
+display:inline-block;
+padding:5px 9px;
+border-radius:20px;
+background:#263453;
+font-size:13px;
+margin:3px;
+}
+
+.voice{
+border-left:4px solid #fff;
+padding-left:12px;
+margin-top:12px;
+font-style:italic;
+}
+
+.final{
+margin-top:20px;
+padding:18px;
+border-radius:15px;
+background:#202a45;
+}
+
+.photoBox{
+border:2px dashed #3b465f;
+border-radius:12px;
+padding:18px;
+margin-top:15px;
+text-align:center;
+color:#aeb7ca;
+}
+
+input[type=file]{
+margin-top:10px;
+width:100%;
+}
+
+.small{
+font-size:13px;
+color:#8f9ab0;
+margin-top:8px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+
+<h1>🧠 Prompt2Video AI Director</h1>
+
+<p>
+Turn one idea into a complete video production plan.
+</p>
+
+</div>
+
+<div class="card">
+
+<label>🎬 Your video idea</label>
+
+<textarea id="prompt"
+placeholder="Example: Create a 15-second Marathi advertisement for Suvarna Boutique with a beautiful woman showing the new collection."></textarea>
+
+<select id="language">
+
+<option value="Marathi">Marathi</option>
+<option value="Hindi">Hindi</option>
+<option value="English">English</option>
+
+</select>
+
+<select id="duration">
+
+<option value="15">15 seconds</option>
+<option value="30">30 seconds</option>
+<option value="60">60 seconds</option>
+
+</select>
+
+<div class="photoBox">
+
+📸 Optional reference photo
+
+<input
+type="file"
+id="photo"
+accept="image/*"
+>
+
+<div class="small">
+If a photo is provided, the final AI system will use it as the main character reference.
+</div>
+
+</div>
+
+<button id="directorButton" onclick="directVideo()">
+
+🧠 CREATE VIDEO PLAN
+
+</button>
+
+<div id="status"></div>
+
+</div>
+
+<div id="director" class="director">
+
+<div class="card">
+
+<h2>🎬 AI Director Plan</h2>
+
+<div id="scenes"></div>
+
+<div class="final">
+
+<h3>🎙️ Audio Direction</h3>
+
+<div id="audio"></div>
+
+<h3>🎨 Visual Direction</h3>
+
+<div id="visual"></div>
+
+<h3>🎬 Final Direction</h3>
+
+<div id="finalDirection"></div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+function directVideo(){
+
+const prompt=document.getElementById("prompt").value.trim();
+
+const language=document.getElementById("language").value;
+
+const duration=parseInt(document.getElementById("duration").value);
+
+const photo=document.getElementById("photo").files.length>0;
+
+const button=document.getElementById("directorButton");
+
+const status=document.getElementById("status");
+
+if(!prompt){
+
+alert("Please enter your video idea.");
+
+return;
+
+}
+
+button.disabled=true;
+
+status.innerText="🧠 AI Director is analyzing your idea...";
+
+setTimeout(function(){
+
+const plan=buildPlan(prompt,language,duration,photo);
+
+renderPlan(plan);
+
+status.innerText="✅ Video direction completed.";
+
+button.disabled=false;
+
+},800);
+
+}
+
+function buildPlan(prompt,language,duration,photo){
+
+const topic=prompt.toLowerCase();
+
+let category="general";
+
+if(
+topic.includes("advertisement") ||
+topic.includes("advertise") ||
+topic.includes("shop") ||
+topic.includes("product") ||
+topic.includes("brand") ||
+topic.includes("boutique")
+){
+
+category="advertisement";
+
+}
+
+if(
+topic.includes("birthday") ||
+topic.includes("birthday party")
+){
+
+category="birthday";
+
+}
+
+if(
+topic.includes("romantic") ||
+topic.includes("love") ||
+topic.includes("couple")
+){
+
+category="romantic";
+
+}
+
+if(
+topic.includes("corporate") ||
+topic.includes("business") ||
+topic.includes("company")
+){
+
+category="corporate";
+
+}
+
+let scenes=[];
+
+if(category==="advertisement"){
+
+scenes=[
+
+{
+title:"Scene 1 — Opening",
+visual:"Cinematic exterior of the most suitable shop or business location for the product.",
+person:"Suitable customer based on the story.",
+location:"Beautiful, realistic commercial location.",
+action:"Person approaches or enters the location.",
+camera:"Wide establishing shot with slow cinematic push-in.",
+text:"Brand or opening message.",
+voice:"NONE"
+},
+
+{
+title:"Scene 2 — Discovery",
+visual:"Realistic interior showing the product or service clearly.",
+person:"Main customer interacting naturally.",
+location:"Inside the business.",
+action:"Customer explores the product or service.",
+camera:"Smooth tracking shot.",
+text:"New Collection / Discover More.",
+voice:"NONE"
+},
+
+{
+title:"Scene 3 — Product",
+visual:"Detailed close-up of the main product.",
+person:"Customer or model demonstrating the product.",
+location:"Professional environment.",
+action:"Product is shown from attractive angles.",
+camera:"Slow close-up movement.",
+text:"Premium Quality / New Collection.",
+voice:"Professional voice-over describing the key benefit."
+},
+
+{
+title:"Scene 4 — Emotion",
+visual:"Happy customer experiencing the product.",
+person:"Main customer.",
+location:"Same visual world as previous scenes.",
+action:"Natural smile and positive reaction.",
+camera:"Medium shot transitioning to close-up.",
+text:"Made For You.",
+voice:"Warm, engaging voice-over."
+},
+
+{
+title:"Scene 5 — Call to Action",
+visual:"Strong final brand/product shot.",
+person:"Customer or model if appropriate.",
+location:"Business location.",
+action:"Final confident pose or product presentation.",
+camera:"Clean cinematic hero shot.",
+text:"Brand + Offer + Call To Action.",
+voice:"Clear final call-to-action."
+}
+
+];
+
+}
+
+else if(category==="birthday"){
+
+scenes=[
+
+{
+title:"Scene 1 — Celebration",
+visual:"Beautiful decorated birthday location.",
+person:photo?"Reference person as main character.":"Main birthday person.",
+location:"Festive birthday venue.",
+action:"Person enters celebration.",
+camera:"Wide cinematic establishing shot.",
+text:"A Special Day",
+voice:"NONE"
+},
+
+{
+title:"Scene 2 — Surprise",
+visual:"Friends or family preparing a surprise.",
+person:"Birthday person and loved ones.",
+location:"Decorated celebration space.",
+action:"Surprise moment.",
+camera:"Smooth moving shot.",
+text:"Surprise!",
+voice:"NONE"
+},
+
+{
+title:"Scene 3 — Cake",
+visual:"Beautiful birthday cake with candles.",
+person:"Birthday person.",
+location:"Party table.",
+action:"Person approaches cake.",
+camera:"Cinematic close-up.",
+text:"Happy Birthday",
+voice:"Warm emotional voice."
+},
+
+{
+title:"Scene 4 — Moment",
+visual:"Birthday person smiling with family.",
+person:"Reference person if supplied.",
+location:"Same celebration.",
+action:"Happy emotional moment.",
+camera:"Close-up.",
+text:"Wishing You Happiness",
+voice:"Emotional birthday message."
+},
+
+{
+title:"Scene 5 — Ending",
+visual:"Beautiful final birthday composition.",
+person:"Birthday person.",
+location:"Celebration background.",
+action:"Smile toward camera.",
+camera:"Slow cinematic pull-back.",
+text:"Happy Birthday!",
+voice:"Final birthday wish."
+}
+
+];
+
+}
+
+else if(category==="romantic"){
+
+scenes=[
+
+{
+title:"Scene 1 — Opening",
+visual:"Beautiful romantic environment.",
+person:"Appropriate couple.",
+location:"Scenic location.",
+action:"Couple approaches each other.",
+camera:"Wide cinematic shot.",
+text:"A Beautiful Story",
+voice:"NONE"
+},
+
+{
+title:"Scene 2 — Connection",
+visual:"Couple sharing a natural emotional moment.",
+person:"Couple.",
+location:"Romantic setting.",
+action:"Conversation or smile.",
+camera:"Medium tracking shot.",
+text:"Together",
+voice:"NONE"
+},
+
+{
+title:"Scene 3 — Detail",
+visual:"Close-up of hands, expressions or meaningful object.",
+person:"Couple.",
+location:"Same environment.",
+action:"Emotional gesture.",
+camera:"Close-up.",
+text:"Every Moment Matters",
+voice:"Soft emotional voice."
+},
+
+{
+title:"Scene 4 — Emotion",
+visual:"Couple smiling naturally.",
+person:"Couple.",
+location:"Golden-hour or beautiful lighting.",
+action:"Looking at each other.",
+camera:"Slow cinematic movement.",
+text:"Forever",
+voice:"Soft romantic narration."
+},
+
+{
+title:"Scene 5 — Ending",
+visual:"Beautiful final romantic composition.",
+person:"Couple.",
+location:"Scenic background.",
+action:"Final emotional moment.",
+camera:"Slow pull-back.",
+text:"Together",
+voice:"Final emotional line."
+}
+
+];
+
+}
+
+else{
+
+scenes=[
+
+{
+title:"Scene 1 — Opening",
+visual:"Most appropriate cinematic location based on the prompt.",
+person:"Most appropriate person or group.",
+location:"Location selected from the story.",
+action:"Opening action.",
+camera:"Wide establishing shot.",
+text:"Opening message.",
+voice:"NONE"
+},
+
+{
+title:"Scene 2 — Story",
+visual:"Visual representation of the main idea.",
+person:"Main character.",
+location:"Story location.",
+action:"Main action begins.",
+camera:"Medium tracking shot.",
+text:"Story message.",
+voice:"NONE"
+},
+
+{
+title:"Scene 3 — Focus",
+visual:"Important object, person or event.",
+person:"Main character.",
+location:"Relevant environment.",
+action:"Key moment.",
+camera:"Close-up.",
+text:"Key message.",
+voice:"Narration if useful."
+},
+
+{
+title:"Scene 4 — Emotion",
+visual:"Strong emotional or interesting moment.",
+person:"Main character.",
+location:"Appropriate setting.",
+action:"Emotional reaction.",
+camera:"Cinematic close-up.",
+text:"Emotional message.",
+voice:"Appropriate narration."
+},
+
+{
+title:"Scene 5 — Ending",
+visual:"Strong final image representing the complete story.",
+person:"Main character if appropriate.",
+location:"Best final location.",
+action:"Final action.",
+camera:"Hero shot.",
+text:"Final message.",
+voice:"Final call-to-action or conclusion."
+}
+
+];
+
+}
+
+return{
+prompt,
+language,
+duration,
+photo,
+category,
+scenes
+};
+
+}
+
+function renderPlan(plan){
+
+document.getElementById("director").style.display="block";
+
+const container=document.getElementById("scenes");
+
+container.innerHTML="";
+
+plan.scenes.forEach(function(scene,index){
+
+const div=document.createElement("div");
+
+div.className="scene";
+
+div.innerHTML=`
+
+<div class="scene-title">
+${scene.title}
+</div>
+
+<div class="row">
+<span class="key">👁️ Visual:</span>
+${scene.visual}
+</div>
+
+<div class="row">
+<span class="key">👤 Character:</span>
+${scene.person}
+</div>
+
+<div class="row">
+<span class="key">📍 Location:</span>
+${scene.location}
+</div>
+
+<div class="row">
+<span class="key">🎬 Action:</span>
+${scene.action}
+</div>
+
+<div class="row">
+<span class="key">🎥 Camera:</span>
+${scene.camera}
+</div>
+
+<div class="row">
+<span class="key">📝 Screen Text:</span>
+${scene.text}
+</div>
+
+<div class="voice">
+🎙️ Voice: ${scene.voice}
+</div>
+
+`;
+
+container.appendChild(div);
+
+});
+
+document.getElementById("audio").innerHTML=`
+
+<span class="badge">Language: ${plan.language}</span>
+
+<span class="badge">Voice chosen by story</span>
+
+<span class="badge">Scene-specific narration</span>
+
+<span class="badge">Background music</span>
+
+<p>
+The narrator should NOT read visual descriptions or screen text.
+Only designated voice-over lines should be spoken.
+</p>
+`;
+
+document.getElementById("visual").innerHTML=`
+
+<p>
+${plan.photo
+?"📸 Reference photo supplied — use it as the primary character reference."
+:"🤖 No photo supplied — AI should create/select the most suitable character and environment for each scene."
+}
+</p>
+
+<p>
+Visuals should be realistic, clear, cinematic and consistent across scenes.
+</p>
+
+`;
+
+document.getElementById("finalDirection").innerHTML=`
+
+<p>
+🎬 ${plan.duration}-second vertical video • 9:16
+</p>
+
+<p>
+The AI Director should choose the most suitable characters,
+locations, camera movements, lighting, voice and music based
+on the user's original idea.
+</p>
+
+`;
+
+window.scrollTo({
+top:document.getElementById("director").offsetTop,
+behavior:"smooth"
+});
+
+}
+
+</script>
+
+</body>
+</html>
